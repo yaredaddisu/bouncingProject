@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bouncing Ball Animation</title>
+  <style>
+    body {
+      text-align: center;
+      margin-top: 20px;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 1px solid black;
+      display: block;
+      margin: 0 auto;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="ballCanvas"></canvas>
+  <div>
+    <button id="startStopBtn">Start</button>
+    <button id="speedUpBtn">Speed Up</button>
+    <button id="slowDownBtn">Slow Down</button>
+    <button id="reverseBtn">Reverse</button>
+  </div>
+
+  <script>
+    // Select canvas and buttons
+    const canvas = document.getElementById("ballCanvas");
+    const startStopBtn = document.getElementById("startStopBtn");
+    const speedUpBtn = document.getElementById("speedUpBtn");
+    const slowDownBtn = document.getElementById("slowDownBtn");
+    const reverseBtn = document.getElementById("reverseBtn");
+
+    const ctx = canvas.getContext("2d");
+
+    // Set canvas dimensions
+    canvas.width = window.innerWidth * 0.8;
+    canvas.height = window.innerHeight * 0.8;
+
+    // Ball properties
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: 20,
+      dx: 3, // Horizontal velocity
+      dy: 3, // Vertical velocity
+      color: "red",
+    };
+
+    let isRunning = false;
+    let animationFrameId = null;
+
+    // Draw the ball on the canvas
+    function drawBall() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); // Draw ball
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    // Update ball position and handle wall collisions
+    function updateBall() {
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // Check for collisions with walls
+      if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+        ball.dx = -ball.dx; // Reverse horizontal direction
+      }
+
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.dy = -ball.dy; // Reverse vertical direction
+      }
+
+      drawBall();
+    }
+
+    // Animation loop
+    function animate() {
+      if (isRunning) {
+        updateBall();
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    }
+
+    // Handle Start/Stop button
+    startStopBtn.addEventListener("click", () => {
+      isRunning = !isRunning;
+      startStopBtn.textContent = isRunning ? "Stop" : "Start";
+      if (isRunning) {
+        animate();
+      } else {
+        cancelAnimationFrame(animationFrameId);
+      }
+    });
+
+    // Handle Speed Up button
+    speedUpBtn.addEventListener("click", () => {
+      ball.dx *= 1.5; // Increase horizontal speed
+      ball.dy *= 1.5; // Increase vertical speed
+    });
+
+    // Handle Slow Down button
+    slowDownBtn.addEventListener("click", () => {
+      ball.dx *= 0.7; // Decrease horizontal speed
+      ball.dy *= 0.7; // Decrease vertical speed
+    });
+
+    // Handle Reverse button
+    reverseBtn.addEventListener("click", () => {
+      ball.dx = -ball.dx; // Reverse horizontal direction
+      ball.dy = -ball.dy; // Reverse vertical direction
+    });
+
+    // Handle window resize
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth * 0.8;
+      canvas.height = window.innerHeight * 0.8;
+      drawBall(); // Redraw ball after resizing
+    });
+
+    // Initial draw
+    drawBall();
+  </script>
+</body>
+</html>

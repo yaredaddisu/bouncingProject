@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bouncing Ball Animation</title>
+  <style>
+    body {
+      text-align: center;
+      margin-top: 20px;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 1px solid black;
+      display: block;
+      margin: 0 auto;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h3 id="welcomeMessage"></h3>
+  </div>
+  <canvas id="ballCanvas"></canvas>
+  <div>
+    <button id="startStopBtn">Start</button>
+    <button id="speedUpBtn">Speed Up</button>
+    <button id="slowDownBtn">Slow Down</button>
+    <button id="reverseBtn">Reverse</button>
+  </div>
+
+  <script>
+    // WebSocket setup
+    //const ws = new WebSocket('ws://localhost:8090');
+    const ws = new WebSocket('wss://bouncingback-3.onrender.com');
+
+    ws.onopen = () => console.log('WebSocket connection established');
+
+    // Extract parameters from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatId = urlParams.get('chatId');
+    const userName = urlParams.get('userName');
+
+    // Display username or a default message
+    const welcomeMessage = document.getElementById('welcomeMessage');
+    if (userName) {
+      welcomeMessage.textContent = `Welcome, ${decodeURIComponent(userName)}!`;
+    } else {
+      welcomeMessage.textContent = `Welcome, Guest!`;
+    }
+
+    console.log('Chat ID:', chatId);
+    console.log('User Name:', userName);
+
+    // Ball properties
+    const canvas = document.getElementById('ballCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth * 0.8;
+    canvas.height = window.innerHeight * 0.8;
+
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: 20,
+      dx: 3, // Horizontal velocity
+      dy: 3, // Vertical velocity
+      color: 'red',
+    };
+
+    let isRunning = false;
+    let animationFrameId;
+
+    function drawBall() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function updateBall() {
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+        ball.dx = -ball.dx;
+      }
+
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.dy = -ball.dy;
+      }
+
+      drawBall();
+    }
+
+    function animate() {
+      if (isRunning) {
+        updateBall();
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    }
+
+    // Process commands received from the WebSocket (or Telegram Bot)
+    ws.onmessage = (event) => {
+      const command = event.data;
+
+      console.log(`Command received: ${command}`);
+
+      switch (command) {
+        case 'start':
+          isRunning = true;
+          animate();
+          break;
+        case 'stop':
+          isRunning = false;
+          cancelAnimationFrame(animationFrameId);
+          break;
+        case 'speedup':
+          ball.dx *= 1.5;
+          ball.dy *= 1.5;
+          break;
+        case 'slowdown':
+          ball.dx *= 0.7;
+          ball.dy *= 0.7;
+          break;
+        case 'reverse':
+          ball.dx = -ball.dx;
+          ball.dy = -ball.dy;
+          break;
+        default:
+          console.log(`Unknown command: ${command}`);
+      }
+    };
+
+    // Send command along with chatId to WebSocket server
+    function sendCommandToServer(command) {
+      const message = JSON.stringify({ command, chatId });
+      ws.send(message);
+    }
+
+    // Button event listeners to trigger animation commands
+    document.getElementById('startStopBtn').addEventListener('click', () => {
+      isRunning = !isRunning;
+      document.getElementById('startStopBtn').textContent = isRunning ? 'Stop' : 'Start';
+      if (isRunning) animate();
+      else cancelAnimationFrame(animationFrameId);
+
+      // Send command
+      sendCommandToServer(isRunning ? 'start' : 'stop');
+    });
+
+    document.getElementById('speedUpBtn').addEventListener('click', () => {
+      ball.dx *= 1.5;
+      ball.dy *= 1.5;
+
+      // Send command
+      sendCommandToServer('speedup');
+    });
+
+    document.getElementById('slowDownBtn').addEventListener('click', () => {
+      ball.dx *= 0.7;
+      ball.dy *= 0.7;
+
+      // Send command
+      sendCommandToServer('slowdown');
+    });
+
+    document.getElementById('reverseBtn').addEventListener('click', () => {
+      ball.dx = -ball.dx;
+      ball.dy = -ball.dy;
+
+      // Send command
+      sendCommandToServer('reverse');
+    });
+
+    // Initial draw
+    drawBall();
+  </script>
+</body>
+</html>
