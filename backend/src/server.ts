@@ -1,11 +1,23 @@
-
 import WebSocket, { WebSocketServer } from 'ws';
 import fetch from 'node-fetch';
 
 const TELEGRAM_API_URL =
   'https://api.telegram.org/bot7470854521:AAHvOW9cq9W2SDybCeVYnToPmxIW8AyH78A/sendMessage';
+const RENDER_URL = 'https://bouncingback-3.onrender.com'; // Render service URL for keep-alive
 
 const wss = new WebSocketServer({ port: 8090 });
+
+// Keep-alive mechanism
+setInterval(async () => {
+  try {
+    const response = await fetch(RENDER_URL);
+    console.log(
+      `Keep-alive ping sent to Render service. Status Code: ${response.status}`
+    );
+  } catch (error) {
+    console.error('Keep-alive ping failed:', error);
+  }
+}, 5 * 60 * 1000); // Ping every 5 minutes
 
 wss.on('connection', (ws) => {
   console.log('WebSocket client connected.');
